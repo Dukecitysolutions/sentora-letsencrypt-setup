@@ -65,6 +65,9 @@ if [[ "$OS" = "CentOs" ]]; then
 
 	$PACKAGE_INSTALLER mod_ssl
 	
+	# check mod_ssl is enabled
+	a2enmod ssl
+		
 # Patch apache mod_ssl #listen 443 line 
 
 	#sed -i 's|Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
@@ -74,6 +77,9 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	PACKAGE_INSTALLER="apt-get -yqq install"
 
 	$PACKAGE_INSTALLER mod_ssl
+	
+	# check mod_ssl is enabled
+	a2enmod ssl
 
 fi
 
