@@ -5,13 +5,13 @@
 ## Description
 
 Sentora Letsencrypt install includes-
--Installs Letsencrypt
--Installs/Enables Apache mod_ssl
--Creates Sentora control panel SSL (90 Days)
--Configures/Enables sentora control panel SSL Cert.
+* Installs Letsencrypt
+* Installs/Enables Apache mod_ssl
+* Creates Sentora control panel SSL (90 Days)
+* Configures/Enables sentora control panel SSL Cert.
 
 Does not include-
--Control panel auto SSL renewal YET.
+* Control panel auto SSL renewal YET.
 
 ## Supports:
 -Sentora live v1.0.3.1 - ONLY for now.
