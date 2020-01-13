@@ -1,0 +1,5 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+HOME=/
+5 8 * * 6 root nice -2 /usr/bin/sh ~/letsencrypt-renew.sh > /var/sentora/logs/letsencrypt-renew.log 2>&1
