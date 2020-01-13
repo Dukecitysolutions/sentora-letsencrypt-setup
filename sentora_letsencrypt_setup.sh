@@ -60,21 +60,25 @@ fi
 if [[ "$OS" = "CentOs" ]]; then
 
 	PACKAGE_INSTALLER="yum -y -q install"
+	APACHE_START="systemctl start httpd"
+	APACHE_STOP="systemctl stop httpd"
 
 	$PACKAGE_INSTALLER openssl
 
 	$PACKAGE_INSTALLER mod_ssl
 	
 	# check mod_ssl is enabled
-	a2enmod ssl
+	#a2enmod ssl
 		
-# Patch apache mod_ssl #listen 443 line 
+###### Patch apache mod_ssl #listen 443 line 
 
 	#sed -i 's|Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
 
 elif [[ "$OS" = "Ubuntu" ]]; then
 
 	PACKAGE_INSTALLER="apt-get -yqq install"
+	APACHE_START="service apache2 start"
+	APACHE_STOP="service apache2 stop"
 
 	$PACKAGE_INSTALLER mod_ssl
 	
@@ -105,9 +109,9 @@ function setpanel_ssl {
 	SENTORA_DOMAIN=$($PANEL_PATH/panel/bin/setso --show sentora_domain)
 	
 	# Create controlpanel letsencrypt cert
-	service apache2 stop
+	$APACHE_STOP
 	./letsencrypt-auto certonly --standalone -d $SENTORA_DOMAIN
-	service apache2 start
+	$APACHE_START
 
 	# Add ssl config to panels vhost entry
 	SSL_CONFIG="$(cat <<-EOF
