@@ -62,6 +62,7 @@ if [[ "$OS" = "CentOs" ]]; then
 	PACKAGE_INSTALLER="yum -y -q install"
 	APACHE_START="systemctl start httpd"
 	APACHE_STOP="systemctl stop httpd"
+	CRON_RESTART="systemctl restart cron"
 
 	$PACKAGE_INSTALLER openssl
 
@@ -79,6 +80,7 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	PACKAGE_INSTALLER="apt-get -yqq install"
 	APACHE_START="service apache2 start"
 	APACHE_STOP="service apache2 stop"
+	CRON_RESTART="service cron restart "
 
 	$PACKAGE_INSTALLER mod_ssl
 	
@@ -103,7 +105,7 @@ echo -e "\nSetting up Controlpanel letsencrypt..."
 # Coming soon!!!
 
 function setpanel_ssl {
-	
+
 	# Get Sentora panel url
 	# find a way to add url to a variable this might work
 	SENTORA_DOMAIN=$($PANEL_PATH/panel/bin/setso --show sentora_domain)
@@ -142,12 +144,30 @@ function setpanel_ssl {
 			$PANEL_PATH/panel/bin/setso --set global_zpcustom "$SSL_CONFIG"
 		fi
 	
+		#########################################################################################################
+		# Download/set need files from Github for Auto renew panel SSL
+		#########################################################################################################
+		$PACKAGE_INSTALLER git
+		git clone https://github.com/Dukecitysolutions/sentora-letsencrypt-setup sentora-letsencrypt
+		cd sentora=letsencrypt
+		
+		# Copy/setup Auto-renew files for panel renewal
+		cp -r preconf/letsencrypt/letsencrypt-cron /etc/cron.d
+		cp -r preconf/letsencrypt/letsencrypt-renew.sh ~/
+		
+		# Restart Cron service
+		$CRON_RESTART
+	
+		#########################################################################################################
+		# Set and Run Zdaemon
+		#########################################################################################################
 		# Set apache daemon to build vhosts file.
 		$PANEL_PATH/panel/bin/setso --set apache_changed "true"
 	
 		# Run Daemon
 		php -d "sp.configuration_file=/etc/sentora/configs/php/sp/sentora.rules" -q /etc/sentora/panel/bin/daemon.php
 		service apache2 restart
+		
 	else
 		echo -e "\nLooks like something went wrong. Please check log, correct issue and try again."
 		exit
