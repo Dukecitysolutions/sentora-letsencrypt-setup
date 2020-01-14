@@ -80,7 +80,7 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	PACKAGE_INSTALLER="apt-get -yqq install"
 	APACHE_START="service apache2 start"
 	APACHE_STOP="service apache2 stop"
-	CRON_RESTART="service cron restart "
+	CRON_RESTART="service cron restart"
 
 	$PACKAGE_INSTALLER mod_ssl
 	
@@ -149,11 +149,18 @@ function setpanel_ssl {
 		#########################################################################################################
 		$PACKAGE_INSTALLER git
 		git clone https://github.com/Dukecitysolutions/sentora-letsencrypt-setup sentora-letsencrypt
-		cd sentora=letsencrypt
+		cd sentora-letsencrypt
 		
 		# Copy/setup Auto-renew files for panel renewal
-		cp -r preconf/letsencrypt/letsencrypt-cron /etc/cron.d
-		cp -r preconf/letsencrypt/letsencrypt-renew.sh ~/
+		mkdir -p /etc/sentora/configs/letsencrypt
+		cp -r preconf/letsencrypt/* /etc/sentora/configs/letsencrypt/
+		cp -r preconf/letsencrypt/letsencrypt-cron /etc/cron.d/
+		
+		# Make renew script executable
+		chmod +x /etc/sentora/configs/letsencrypt/letsencrypt-renew.sh
+		
+		# Clean up after install
+		
 		
 		# Restart Cron service
 		$CRON_RESTART
