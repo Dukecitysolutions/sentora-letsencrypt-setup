@@ -1,6 +1,7 @@
 #!/bin/bash
 
 PANEL_PATH="/etc/sentora"
+SENTORA_VERSION=$($PANEL_PATH/panel/bin/setso --show db_version)
 
 # Bash Color
 red='\e[0;31m'
@@ -56,7 +57,8 @@ else
 fi
 
 #####################################################################
-
+echo -e "\nCentOS Letsencrypt Preconf installs"
+#####################################################################
 if [[ "$OS" = "CentOs" ]]; then
 
 	PACKAGE_INSTALLER="yum -y -q install"
@@ -71,10 +73,10 @@ if [[ "$OS" = "CentOs" ]]; then
 	# check mod_ssl is enabled
 	#a2enmod ssl
 		
-###### Patch apache mod_ssl #listen 443 line 
 
-	#sed -i 's|Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
-
+#####################################################################
+echo -e "\nUbuntu Letsencrypt Preconf installs"
+#####################################################################
 elif [[ "$OS" = "Ubuntu" ]]; then
 
 	PACKAGE_INSTALLER="apt-get -yqq install"
@@ -86,7 +88,15 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	
 	# check mod_ssl is enabled
 	a2enmod ssl
-
+	
+	# Patch Apache mod_ssl #listen 443 line for Sentora v1.0.3 if needed
+	if [ "$SENTORA_VERSION" == "1.0.3" ]; then
+		echo "Found Sentora v1.0.3. Disabling/Patching Apache mod_ssl Listen line"
+		sed -i 's|*Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
+	else
+		echo "Found Sentora v1.0.3.1-BETA"
+		#Do nothing for 
+	fi
 fi
 
 #####################################################################
@@ -134,13 +144,13 @@ function setpanel_ssl {
 	file="/etc/letsencrypt/live/$SENTORA_DOMAIN"
 	if [ -f "$file" ]; then
 	
-		#looking in to this for different setups
+		# Set panel SSL config according to version. looking in to this for different setups.	
 		dir="/etc/sentora/configs/php"
 		if [ -d "$dir" ]; then
 			echo "Found Sentora v1.0.3.1-BETA"
 			$PANEL_PATH/panel/bin/setso --set panel_ssl_tx "$SSL_CONFIG"
 		else
-			echo "Found Sentora v1.0.3."
+			echo "Found Sentora v1.0.3"
 			$PANEL_PATH/panel/bin/setso --set global_zpcustom "$SSL_CONFIG"
 		fi
 	
@@ -160,7 +170,7 @@ function setpanel_ssl {
 		chmod +x /etc/sentora/configs/letsencrypt/letsencrypt-renew.sh
 		
 		# Clean up after install
-		
+		rm -r ~/sentora-letsencrypt
 		
 		# Restart Cron service
 		$CRON_RESTART
