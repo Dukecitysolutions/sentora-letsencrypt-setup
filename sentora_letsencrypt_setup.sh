@@ -73,7 +73,7 @@ if [[ "$OS" = "CentOs" ]]; then
 	# check mod_ssl is enabled
 	#a2enmod ssl
 		
-	sed -i 's|*Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
+	sed -i 's|Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
 	
 	# Patch Apache mod_ssl #listen 443 line for Sentora v1.0.3 if needed
 	#if [ "$SENTORA_VERSION" == "1.0.3" ]; then
@@ -106,6 +106,7 @@ echo -e "\nInstalling letsencrypt..."
 #####################################################################
 
 $PACKAGE_INSTALLER git
+rm -r ~/letsencrypt
 git clone https://github.com/letsencrypt/letsencrypt
 cd letsencrypt
 ./letsencrypt-auto --help
