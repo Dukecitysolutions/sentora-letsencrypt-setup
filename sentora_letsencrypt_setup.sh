@@ -24,7 +24,7 @@ COLUMNS=$(tput cols)
 
 echo ""
 echo "############################################################"
-echo "\nLetsencrypt for Sentora 1.0.0 or 1.0.3 By: Anthony D. #"
+echo -e "\nLetsencrypt for Sentora 1.0.0 or 1.0.3 By: Anthony D. #"
 echo "############################################################"
 
 echo -e "\nChecking that minimal requirements are ok"
@@ -73,7 +73,17 @@ if [[ "$OS" = "CentOs" ]]; then
 	# check mod_ssl is enabled
 	#a2enmod ssl
 		
-
+	sed -i 's|*Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
+	
+	# Patch Apache mod_ssl #listen 443 line for Sentora v1.0.3 if needed
+	#if [ "$SENTORA_VERSION" == "1.0.3" ]; then
+	#	echo "Found Sentora v1.0.3. Disabling/Patching Apache mod_ssl Listen line"
+	#	sed -i 's|*Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
+	#else
+	#	echo "Found Sentora v1.0.3.1-BETA"
+	#	#Do nothing for 
+	#fi
+	
 #####################################################################
 echo -e "\nUbuntu Letsencrypt Preconf installs..."
 #####################################################################
@@ -89,16 +99,6 @@ elif [[ "$OS" = "Ubuntu" ]]; then
 	# check mod_ssl is enabled
 	a2enmod ssl
 	
-	sed -i 's|*Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
-	
-	# Patch Apache mod_ssl #listen 443 line for Sentora v1.0.3 if needed
-	#if [ "$SENTORA_VERSION" == "1.0.3" ]; then
-	#	echo "Found Sentora v1.0.3. Disabling/Patching Apache mod_ssl Listen line"
-	#	sed -i 's|*Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
-	#else
-	#	echo "Found Sentora v1.0.3.1-BETA"
-	#	#Do nothing for 
-	#fi
 fi
 
 #####################################################################
