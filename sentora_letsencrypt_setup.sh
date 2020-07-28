@@ -1,5 +1,32 @@
 #!/bin/bash
 
+# Official Sentora Letsencypt Automated Installation Script
+# =============================================
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Supported Operating Systems: 
+# CentOS 6.*/7.*/8.* Minimal, 
+# Ubuntu server 14.04/16.04/18.04/20.04 
+# Debian 8.*/9.*/10.* COMING SOON!!!
+# 32bit and 64bit
+#
+# Created by:
+#
+#   Anthony DeBeaulieu (anthony.d@sentora.org)
+#
+
 PANEL_PATH="/etc/sentora"
 SENTORA_VERSION=$($PANEL_PATH/panel/bin/setso --show db_version)
 
@@ -16,7 +43,7 @@ COLUMNS=$(tput cols)
 # Installer Logging
 #--- Set custom logging methods so we create a log file in the current working directory.
 
-	logfile=$(date +%Y-%m-%d_%H.%M.%S_sentora_letsencrypt_install.log)
+	logfile=$(/var/sentora/logs/letsencrypt-renew.log)
 	touch "$logfile"
 	exec > >(tee "$logfile")
 	exec 2>&1
@@ -24,7 +51,7 @@ COLUMNS=$(tput cols)
 
 echo ""
 echo "############################################################"
-echo -e "\nLetsencrypt for Sentora 1.0.0 or 1.0.3 By: Anthony D. #"
+echo -e "\nWelcome to the Official Letsencrypt Installer for Sentora v1.0.0-1.1.0 By: Anthony D. #"
 echo "############################################################"
 
 echo -e "\nChecking that minimal requirements are ok"
@@ -49,30 +76,41 @@ ARCH=$(uname -m)
 echo "Detected : $OS  $VER  $ARCH"
 
 if [[ "$OS" = "CentOs" && ("$VER" = "6" || "$VER" = "7" ) || 
-      "$OS" = "Ubuntu" && ( "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04" ) ]] ; then
+      "$OS" = "Ubuntu" && ( "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ) ]] ; then
     echo "- Ok."
 else
     echo "Sorry, this OS is not supported by Sentora." 
     exit 1
 fi
 
-#####################################################################
-echo -e "\nCentOS Letsencrypt Preconf installs..."
-#####################################################################
-if [[ "$OS" = "CentOs" ]]; then
-
+# Set OS package installer/remover/service commands
+if [[ "$OS" = "CentOs" ]] ; then
 	PACKAGE_INSTALLER="yum -y -q install"
 	APACHE_START="systemctl start httpd"
 	APACHE_STOP="systemctl stop httpd"
+	APACHE_RESTART="systemctl restart httpd"
 	CRON_RESTART="systemctl restart cron"
+elif [[ "$OS" = "Ubuntu" ]] ; then
+	PACKAGE_INSTALLER="apt-get -yqq install"
+	APACHE_START="service apache2 start"
+	APACHE_STOP="service apache2 stop"
+	APACHE_RESTART="service apache2 restart"
+	CRON_RESTART="service cron restart"
+fi
 
+###### Start install here
+
+if [[ "$OS" = "CentOs" ]]; then
+
+#####################################################################
+echo -e "\n--- Detected - $OS $VER - Installing MOD_SSL & Letsencrypt Preconf..."
+#####################################################################
+
+	# Install MOD_SSL & Openssl
 	$PACKAGE_INSTALLER openssl
-
 	$PACKAGE_INSTALLER mod_ssl
 	
-	# check mod_ssl is enabled
-	#a2enmod ssl
-		
+	# Remove Listen 443 from ssl.config. Listen is controlled by Sentora vhost config file.		
 	sed -i 's|Listen 443|#Listen 443|g' /etc/httpd/conf.d/ssl.conf
 	
 	# Patch Apache mod_ssl #listen 443 line for Sentora v1.0.3 if needed
@@ -84,25 +122,22 @@ if [[ "$OS" = "CentOs" ]]; then
 	#	#Do nothing for 
 	#fi
 	
-#####################################################################
-echo -e "\nUbuntu Letsencrypt Preconf installs..."
-#####################################################################
-elif [[ "$OS" = "Ubuntu" ]]; then
+elif [[ "$OS" = "Ubuntu" ]]; then	
 
-	PACKAGE_INSTALLER="apt-get -yqq install"
-	APACHE_START="service apache2 start"
-	APACHE_STOP="service apache2 stop"
-	CRON_RESTART="service cron restart"
+#####################################################################
+echo -e "\n--- Detected - $OS $VER - Installing MOD_SSL & Letsencrypt Preconf..."
+#####################################################################
 
+	# Install MOD_SSL
 	$PACKAGE_INSTALLER mod_ssl
 	
-	# check mod_ssl is enabled
+	# Check and enable MOD_SSL
 	a2enmod ssl
 	
 fi
 
 #####################################################################
-echo -e "\nInstalling letsencrypt..."
+echo -e "\n--- Installing Letsencrypt..."
 #####################################################################
 
 $PACKAGE_INSTALLER git
@@ -113,22 +148,20 @@ cd letsencrypt
 
 #####################################################################
 # Setup Sentora panel with Letencrypt cert
-echo -e "\nSetting up Controlpanel letsencrypt..."
+echo -e "\n--- Setting up Controlpanel letsencrypt..."
 #####################################################################
-# Coming soon!!!
 
-function setpanel_ssl {
+function set_panel_ssl {
 
-	# Get Sentora panel url
-	# find a way to add url to a variable this might work
+	# Get Sentora panel url for DB
 	SENTORA_DOMAIN=$($PANEL_PATH/panel/bin/setso --show sentora_domain)
 	
-	# Create controlpanel letsencrypt cert
+	# Create Sentora control panel Letsencrypt cert
 	$APACHE_STOP
 	./letsencrypt-auto certonly --standalone -d $SENTORA_DOMAIN
 	$APACHE_START
 
-	# Add ssl config to panels vhost entry
+	# Add SSL config to control panels vhost entry
 	SSL_CONFIG="$(cat <<-EOF
 	SSLEngine on
 	SSLProtocol ALL -SSLv2 -SSLv3
@@ -143,36 +176,51 @@ function setpanel_ssl {
 	EOF
 	)"
 
-	# Check if domain cert was added to continue.
-	file="/etc/letsencrypt/live/$SENTORA_DOMAIN"
-	if [ -f "$file" ]; then
+	# Check if domain cert was added before we continue.
+	FILE="/etc/letsencrypt/live/$SENTORA_DOMAIN"
+	if [ -f "$FILE" ]; then
 	
-		# Set panel SSL config according to version. looking in to this for different setups.	
-		dir="/etc/sentora/configs/php"
-		if [ -d "$dir" ]; then
-			echo "Found Sentora v1.0.3.1-BETA"
+		# Set control panel SSL config according to version. Looking in to this for different setups versions.	
+		DIR="/etc/sentora/configs/php/sp"
+		if [ -d "$DIR" ]; then
+			echo "Found Sentora v.1.1.x"
 			$PANEL_PATH/panel/bin/setso --set panel_ssl_tx "$SSL_CONFIG"
 		else
-			echo "Found Sentora v1.0.3"
+			echo "Found Sentora v.1.0.x"
 			$PANEL_PATH/panel/bin/setso --set global_zpcustom "$SSL_CONFIG"
 		fi
 	
 		#########################################################################################################
 		# Download/set need files from Github for Auto renew panel SSL
 		#########################################################################################################
+		
+		# Install GIT
 		$PACKAGE_INSTALLER git
+		
+		# CHECK for old installer files and delete them
+		if [ -d "~/sentora-letsencrypt" ]; then
+			rm -rf  ~/sentora-letsencrypt
+    		rm -rf  /etc/sentora/configs/sentora-letsencrypt
+		fi
+		
+		# Download/Clone Needed files for setup
 		git clone https://github.com/Dukecitysolutions/sentora-letsencrypt-setup sentora-letsencrypt
 		cd sentora-letsencrypt
 		
-		# Copy/setup Auto-renew files for panel renewal
+		# Delete Letsencrypt config folder contents for NEW updated files
+		if [ -d "/etc/sentora/configs/letsencrypt" ]; then
+    		rm -rf  /etc/sentora/configs/letsencrypt
+		fi
+		
+		# Copy/setup Auto-renew files for panel cert renewal
 		mkdir -p /etc/sentora/configs/letsencrypt
 		cp -r preconf/letsencrypt/* /etc/sentora/configs/letsencrypt/
 		cp -r preconf/letsencrypt/letsencrypt-cron /etc/cron.d/
 		
-		# Make renew script executable
+		# Make auto-renew script executable
 		chmod +x /etc/sentora/configs/letsencrypt/letsencrypt-renew.sh
 		
-		# Clean up after install
+		# Clean up files after install
 		rm -r ~/sentora-letsencrypt
 		
 		# Restart Cron service
@@ -181,33 +229,39 @@ function setpanel_ssl {
 		#########################################################################################################
 		# Set and Run Zdaemon
 		#########################################################################################################
+		
 		# Set apache daemon to build vhosts file.
 		$PANEL_PATH/panel/bin/setso --set apache_changed "true"
 	
-		# Run Daemon
+		# Run Daemon & restart Apache/httpd
 		php -d "sp.configuration_file=/etc/sentora/configs/php/sp/sentora.rules" -q /etc/sentora/panel/bin/daemon.php
-		service apache2 restart
+		$APACHE_RESTART
 		
 	else
-		echo -e "\nLooks like something went wrong. Please check log, correct issue and try again."
+	
+		# If something went wrong stop script and let user know to check log in root folder
+		echo -e "\n- Looks like something went wrong. Please check log in ROOT folder, correct issues and try again."
 		exit
+		
 	fi
 	
 } # End function
 
 while true; do
-read -p "Would you like to setup control panel with a SSL cert? Continue create panel cert? (y/n)?" choice
+read -p "Would you like to setup Sentora control panel with a SSL cert? Press (y/n) to Continue to create Sentora panel cert" choice
 case "$choice" in 
-  y|Y ) setpanel_ssl;break;;
+  y|Y ) set_panel_ssl;break;;
   n|N ) break;;
-  * ) echo "invalid";;
+  * ) echo "Invalid entry. Please enter (y/n) - (Yes/No)";;
 esac
 done
 
+#####################################################################
+
+# Clean up files downloaded for install/update
+rm -r ~/sentora-letsencrypt
 
 #####################################################################
 
 # All done
-echo -e "\nAll done enjoy!!!"
-
-
+echo -e "\nAll done installing Letsencypt. Enjoy!!!"
