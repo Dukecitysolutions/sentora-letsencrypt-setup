@@ -34,7 +34,7 @@ service [SERVICE] start
 **Sub-Domains use code below - ex. SUB.YOUR-DOMAIN.COM**
 ```
 service [SERVICE] stop
-./letsencrypt-auto certonly --standalone -d [YOUR-DOMAIN]
+./letsencrypt-auto certonly --standalone -d [SUB.YOUR-DOMAIN]
 service [SERVICE] start
 ``` 
 
