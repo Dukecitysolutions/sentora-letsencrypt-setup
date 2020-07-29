@@ -21,6 +21,7 @@ bash <(curl -L -Ss http://zppy-repo.dukecitysolutions.com/repo/letsencrypt/sento
 
 ## Create SSL Certs manually with this command
 **CentOs - Replace [SERVICE] with httpd**
+
 **Ubuntu - Replace [SERVICE] with apache2**
 
 **Parent Domians use code below - ex. YOUR-DOMAIN.COM**
