@@ -39,7 +39,10 @@
 
 # Set Date/Time stamp for logs
 NOW=$(date)
+
 echo -e "\n-- Start Timestamp: $NOW"
+
+echo -e "\n-- Starting LetsEncrypt Auto-Renewal process...\n"
 
 # Ensure the OS is compatible with the launcher
 if [ -f /etc/centos-release ]; then
@@ -61,7 +64,8 @@ ARCH=$(uname -m)
 echo "- Detected : $OS  $VER  $ARCH"
 
 if [[ "$OS" = "CentOs" && ("$VER" = "6" || "$VER" = "7" || "$VER" = "8" ) || 
-      "$OS" = "Ubuntu" && ( "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ) ]] ; then
+      "$OS" = "Ubuntu" && ( "$VER" = "14.04" || "$VER" = "16.04" || "$VER" = "18.04" || "$VER" = "20.04" ) ||
+      "$OS" = "debian" && ( "$VER" = "7" || "$VER" = "8" || "$VER" = "9" )]] ; then
     echo "- Ok."
 else
     echo "Sorry, this OS is not supported by Sentora." 
@@ -82,14 +86,19 @@ fi
 ### Start auto-renew script here
 
 # Stop Apache/Httpd service & renew certs
+echo -e "\n-- Stopping Apache services for renewal with HTTPS port :443..."
 $APACHE_STOP
 
 # Renew all certs for Letsencrypt
+echo -e "\n-- Renewing LetsEncrpt Certs..."
 cd ~/letsencrypt
-# ./letsencrypt-auto renew # This is a LIVE RUN setting- for PRODUCTION 
-./letsencrypt-auto renew --dry-run # This is a DRY RUN setting - for TESTING
+./letsencrypt-auto renew # This is a LIVE RUN setting- for PRODUCTION 
+#./letsencrypt-auto renew --dry-run # This is a DRY RUN setting - for TESTING
 
 # Start Apache/Httpd services
+echo -e "\n-- Starting Apache services..."
 $APACHE_START
 
 echo -e "\n-- Finish Timestamp: $NOW"
+
+echo -e "\n#######################################################################"
